@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "DailyNest — Your Everyday Companion",
+  "short_name": "DailyNest",
+  "description": "Plan your day, look after your home, and keep track of your money.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F9F8F4",
+  "theme_color": "#5F7059",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
