@@ -6,10 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   backgroundColor: '#F9F8F4',
   server: {
-    // IMPORTANT: Replace the URL below with your ACTUAL Netlify website address!
-    url: 'https://jade-seahorse-0cb507.netlify.app/', 
-    androidScheme: 'https',
-    cleartext: false
+    androidScheme: 'https'
   }
 };
 
