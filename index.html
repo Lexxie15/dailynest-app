@@ -1,16 +1,638 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DailyNest · Your Everyday Companion</title>
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#5F7059" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DailyNest · Your Everyday Companion</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#5F7059">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { --sage: #8A9A86; --sage-dark: #5F7059; --sage-light: #E8ECE6; --cream: #F9F8F4; --text-dark: #2C352D; --text-muted: #6B756C; --error: #B85555; --warn: #A8741A; --success: #5E8D6B; --white: #FFFFFF; --line: #ECEAE4; }
+    body.theme-dark { --sage: #6B705C; --sage-dark: #8A9A86; --sage-light: #2D3436; --cream: #1E1E1E; --text-dark: #DFDFDF; --text-muted: #A0A0A0; --white: #2D3436; --line: #3D3D3D; background-color: #121212; }
+    body.theme-rose { --sage: #D4A5A5; --sage-dark: #9B6B6B; --sage-light: #F9E8E8; --cream: #FFF5F5; --text-dark: #4A3B3B; --text-muted: #8B7B7B; --white: #FFFFFF; --line: #F0E0E0; }
+    body.theme-ocean { --sage: #5B8DB8; --sage-dark: #3D6B8F; --sage-light: #E8F4F8; --cream: #F0F9FF; --text-dark: #2C3E50; --text-muted: #5D6D7E; --white: #FFFFFF; --line: #D6E4F0; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--cream); color: var(--text-dark); margin: 0; display: flex; justify-content: center; min-height: 100vh; }
+    .app-container { width: 100%; max-width: 480px; background: var(--cream); min-height: 100vh; position: relative; display: flex; flex-direction: column; }
+    .hidden { display: none !important; }
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--sage-dark); outline-offset: 2px; }
+    .auth-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .auth-container { background: var(--white); padding: 32px 24px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; }
+    .logo { text-align: center; margin-bottom: 24px; color: var(--sage); font-weight: bold; letter-spacing: 2px; font-size: 18px; }
+    h1 { font-size: 24px; text-align: center; margin: 0 0 8px 0; font-weight: 600; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 32px; font-size: 15px; line-height: 1.4; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
+    input, select { width: 100%; padding: 12px 16px; border: 1px solid #E0E0E0; border-radius: 12px; font-size: 16px; background: var(--cream); transition: border 0.2s; }
+    input:focus, select:focus { outline: none; border-color: var(--sage); }
+    .btn { width: 100%; padding: 14px; background-color: var(--sage); color: var(--white); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+    .btn:hover { background-color: #768572; }
+    .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+    .link-btn { background: none; border: none; color: var(--sage-dark); font-size: 14px; cursor: pointer; text-decoration: underline; padding: 0; }
+    .footer-links { text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-muted); }
+    .message { padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; text-align: center; display: none; }
+    .message.error { background: #FDE8E8; color: var(--error); display: block; }
+    .message.success { background: #E8F5E9; color: var(--success); display: block; }
+    .dashboard-wrapper { flex: 1; overflow-y: auto; padding-bottom: 96px; }
+    .dash-header { padding: 24px 20px 8px; }
+    .greeting { font-size: 26px; font-weight: 600; margin: 0 0 4px 0; }
+    .page-title { font-size: 26px; font-weight: 600; margin: 0 0 4px 0; }
+    .location-weather { font-size: 14px; color: var(--text-muted); }
+    .card { background: var(--white); margin: 12px 16px; padding: 20px; border-radius: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.03); }
+    .card-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 16px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+    .card-title span:last-child { text-transform: none; letter-spacing: 0; font-weight: 500; }
+    .note { font-size: 13px; color: var(--text-muted); margin: 8px 0 0; line-height: 1.45; }
+    .empty { font-size: 14px; color: var(--text-muted); margin: 0; line-height: 1.45; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-box { background: var(--sage-light); padding: 16px; border-radius: 16px; text-align: center; }
+    .stat-value { font-size: 20px; font-weight: 700; color: var(--sage-dark); display: block; }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: block; }
+    .stat-box .mini { margin-top: 10px; padding: 6px 12px; font-size: 13px; width: auto; }
+    .task-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .task-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .task-item:first-of-type { padding-top: 0; }
+    .task-check { width: 22px; height: 22px; border: 2px solid var(--sage); border-radius: 6px; margin-top: 1px; cursor: pointer; flex-shrink: 0; background: none; padding: 0; position: relative; }
+    .task-check.checked { background: var(--sage); }
+    .task-check.checked::after { content: '✓'; color: white; position: absolute; top: -2px; left: 3px; font-size: 14px; }
+    .task-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .task-title { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; }
+    .task-item.done .task-title { text-decoration: line-through; color: var(--text-muted); font-weight: 400; }
+    .task-meta { font-size: 13px; color: var(--text-muted); margin: 0; }
+    .row-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+    .tiny { background: var(--cream); border: 1px solid #E0E0E0; border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .tiny:hover { border-color: var(--sage); }
+    .tiny.primary { background: var(--sage); border-color: var(--sage); color: #fff; }
+    .tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 1px 7px; border-radius: 4px; background: var(--sage-light); color: var(--text-muted); margin-left: 6px; }
+    .pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+    .pill.good { color: var(--success); } .pill.warn { color: var(--warn); } .pill.crit { color: var(--error); } .pill.mute { color: var(--text-muted); }
+    .focus-banner { background: var(--sage); color: white; padding: 20px; border-radius: 20px; margin: 12px 16px; text-align: center; }
+    .focus-banner h3 { margin: 0 0 8px 0; font-size: 18px; }
+    .focus-banner p { margin: 0 0 16px 0; font-size: 14px; opacity: 0.95; }
+    .focus-clock { font-size: 40px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 0 0 12px; }
+    .btn-white { background: white; color: var(--sage-dark); border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; }
+    .money-breakdown { display: flex; justify-content: space-between; margin-top: 12px; gap: 8px; }
+    .money-item { text-align: center; flex: 1; min-width: 0; }
+    .money-val { font-size: 18px; font-weight: 600; display: block; }
+    .money-lbl { font-size: 12px; color: var(--text-muted); }
+    .big-money { font-size: 32px; font-weight: 700; color: var(--sage-dark); text-align: center; display: block; }
+    .big-money.neg { color: var(--error); }
+    .energy-row { display: flex; gap: 8px; margin-bottom: 16px; }
+    .energy-btn { flex: 1; padding: 8px; border: 1px solid #E0E0E0; background: white; border-radius: 10px; font-size: 13px; cursor: pointer; text-align: center; }
+    .energy-btn.active { background: var(--sage); color: white; border-color: var(--sage); }
+    .seg { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+    .seg button { flex: 1; padding: 9px; border: 1px solid #E0E0E0; background: white; border-radius: 10px; font-size: 14px; cursor: pointer; min-width: 60px; }
+    .seg button[aria-pressed="true"] { background: var(--sage); border-color: var(--sage); color: white; font-weight: 600; }
+    .form-row { display: grid; gap: 8px; margin-top: 14px; }
+    .form-row.two { grid-template-columns: 1fr 1fr; }
+    .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row input, .form-row select { padding: 10px 12px; font-size: 15px; }
+    .form-row .btn { margin-top: 0; padding: 11px; font-size: 15px; }
+    .span-all { grid-column: 1 / -1; }
+    .fld { display: block; font-size: 12px; color: var(--text-muted); margin: 0; }
+    .fld input, .fld select { margin-top: 4px; }
+    .stock-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .stock-row:last-child { border-bottom: none; }
+    .stepper { display: flex; align-items: center; gap: 6px; }
+    .stepper button { width: 30px; height: 30px; border: 1px solid #E0E0E0; background: var(--cream); border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .stepper b { min-width: 52px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 14px; }
+    .attn { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .attn:last-child { border-bottom: none; padding-bottom: 0; }
+    .attn:first-of-type { padding-top: 0; }
+    .attn p { margin: 0; font-size: 14px; line-height: 1.4; }
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--white); border-top: 1px solid #EAEAEA; display: flex; justify-content: space-around; padding: 10px 0 max(18px, env(safe-area-inset-bottom, 0px)); z-index: 100; }
+    .nav-item { text-align: center; font-size: 11px; color: var(--text-muted); cursor: pointer; border: none; background: none; flex: 1; position: relative; padding: 2px 0; }
+    .nav-item[aria-current="page"] { color: var(--sage-dark); font-weight: 600; }
+    .nav-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+    .nav-badge { position: absolute; top: -2px; left: calc(50% + 6px); background: var(--error); color: #fff; border-radius: 999px; font-size: 10px; min-width: 16px; padding: 0 4px; line-height: 16px; }
+    .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 92px; background: var(--text-dark); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 200; max-width: calc(100% - 32px); text-align: center; }
+    .disclaimer { font-size: 12px; color: var(--text-muted); text-align: center; padding: 16px 24px; line-height: 1.45; }
+    .autocomplete-list { position: absolute; background: var(--white); border: 1px solid var(--line); border-radius: 8px; max-height: 150px; overflow-y: auto; z-index: 10; width: calc(100% - 32px); margin: 0 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .autocomplete-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .autocomplete-item:hover { background: var(--sage-light); }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .price-tag { float: right; color: var(--sage-dark); font-weight: 600; }
+    @media (max-width: 380px) { .form-row.three { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="auth-view" class="auth-wrapper">
+      <div class="auth-container">
+        <div class="logo">DAILYNEST</div>
+        <div id="message" class="message" role="status"></div>
+        <div id="recovery-view" class="hidden"><h1>Choose a new password</h1><p class="subtitle">Complete your password reset securely.</p><form id="recovery-form"><div class="form-group"><label for="new-password">New password</label><input type="password" id="new-password" minlength="12" required autocomplete="new-password"></div><div class="form-group"><label for="repeat-password">Confirm new password</label><input type="password" id="repeat-password" minlength="12" required autocomplete="new-password"></div><button class="btn" id="recovery-btn">Save new password</button></form><div class="footer-links"><button class="link-btn" type="button" onclick="cancelRecovery()">Back to sign in</button></div></div>
+        <div id="signin-view">
+          <h1>Welcome back.</h1>
+          <p class="subtitle">A calmer day starts here. Sign in to your DailyNest account.</p>
+          <form id="signin-form">
+            <div class="form-group"><label for="signin-email">Email address</label><input autocomplete="username" type="email" id="signin-email" required placeholder="you@example.com"></div>
+            <div class="form-group"><label for="signin-password">Password</label><input autocomplete="current-password" type="password" id="signin-password" required placeholder="••••••••••••"></div>
+            <button type="submit" class="btn" id="signin-btn">Sign in →</button>
+          </form>
+          <div class="footer-links">
+            <button class="link-btn" onclick="handleForgotPassword()">Forgot password?</button><br><br>
+            <span>Don't have an account? </span><button class="link-btn" onclick="switchAuthView('signup')">Create account</button>
+          </div>
+        </div>
+        <div id="signup-view" class="hidden">
+          <h1>Join DailyNest.</h1>
+          <p class="subtitle">Let's set up your space. No pressure, just structure.</p>
+          <form id="signup-form">
+            <div class="form-group"><label for="signup-name">Your name</label><input type="text" id="signup-name" required placeholder="Alexandra"></div>
+            <div class="form-group"><label for="signup-location">Location (Optional)</label><input type="text" id="signup-location" placeholder="Binga, Zimbabwe"></div>
+            <div class="form-group"><label for="signup-email">Email address</label><input type="email" id="signup-email" required placeholder="you@example.com"></div>
+            <div class="form-group"><label for="signup-password">Password</label><input type="password" id="signup-password" required minlength="12" placeholder="At least 12 characters"></div>
+            <button type="submit" class="btn" id="signup-btn">Create account →</button>
+          </form>
+          <div class="footer-links">
+            <span>Already have an account? </span><button class="link-btn" onclick="switchAuthView('signin')">← Back to sign in</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="dashboard-view" class="dashboard-wrapper hidden">
+      <div class="card" style="padding:12px 16px" role="status"><span id="sync-status">Preparing your data…</span><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="tiny" type="button" onclick="syncNow()">Sync now</button><button class="tiny" type="button" id="conflict-btn" hidden onclick="resolveConflict()">Resolve conflict</button></div></div>
+      <section id="tab-today" data-tab="today" aria-label="Today"></section>
+      <section id="tab-plan" data-tab="plan" class="hidden" aria-label="Plan"></section>
+      <section id="tab-home" data-tab="home" class="hidden" aria-label="Home"></section>
+      <section id="tab-money" data-tab="money" class="hidden" aria-label="Money"></section>
+      <section id="tab-me" data-tab="me" class="hidden" aria-label="Me"></section>
+    </div>
+    <nav id="bottom-nav" class="bottom-nav hidden" aria-label="Main">
+      <button class="nav-item" data-go="today"><span class="nav-icon"></span>Today</button>
+      <button class="nav-item" data-go="plan"><span class="nav-icon">▦</span>Plan</button>
+      <button class="nav-item" data-go="home"><span class="nav-icon">▤</span>Home</button>
+      <button class="nav-item" data-go="money"><span class="nav-icon">◈</span>Money</button>
+      <button class="nav-item" data-go="me"><span class="nav-icon">☺</span>Me</button>
+    </nav>
+    <div id="toast" class="toast hidden" role="status"></div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONFIG & PRICE LIST
+    // ==========================================
+    const SUPABASE_URL = 'https://fwfqkkmghjlbattcpgpk.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_iUlyKrr4rVZaTh9DaL2rrw_e9pE6vYt';
+    const FALLBACK_LIB = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js';
+    const REQUEST_TIMEOUT_MS = 20000;
+    const OFFLINE_MSG = 'The sign-in service did not load. Check your connection.';
+    const ZIG_RATE = 13.5;
+
+    // TM PICK N PAY PRICE LIST
+    const SHOP_PRICES = [
+      { name: "Eggs", usd: 6.00 }, { name: "Milk full cream 1ltr", usd: 1.50 }, { name: "Buttercup Magarine 250g", usd: 1.30 },
+      { name: "Kefalos Yoghurt 1ltr", usd: 5.80 }, { name: "Kefalos Yoghurt 150ml", usd: 0.80 }, { name: "Dendairy Yog 150g", usd: 0.65 },
+      { name: "TM Pnp Yoghurt", usd: 0.75 }, { name: "Colcom Polony 200g", usd: 1.30 }, { name: "Tastee Polony 250g", usd: 1.00 },
+      { name: "Minute Maid Delight", usd: 1.00 }, { name: "Cascade Orange 1ltr", usd: 1.50 }, { name: "Cascade Orange 400ml", usd: 0.60 },
+      { name: "Revive Dairy Juice", usd: 1.10 }, { name: "Minute Maid Refresh", usd: 0.50 }, { name: "Victoria Fruit Juice", usd: 1.75 },
+      { name: "Pfuko Buttermilk Maheu 500ml", usd: 0.60 }, { name: "Revive Maheu Buttermilk 1ltr", usd: 1.00 }, { name: "Dlite Cooking oil 2ltr", usd: 3.15 },
+      { name: "Pure Drop Cooking oil 2ltr", usd: 3.40 }, { name: "Zimgold Cooking oil 750ml", usd: 1.60 }, { name: "Cookmore Cooking oil 2ltr", usd: 3.60 },
+      { name: "Raha Cooking oil 2ltr", usd: 3.60 }, { name: "Zimgold Cooking oil 2ltr", usd: 3.85 }, { name: "Cashel Valley baked beans 410g", usd: 1.20 },
+      { name: "Montys Baked beans 410g", usd: 1.00 }, { name: "Koo Baked Beans 410g", usd: 1.75 }, { name: "Olivine Baked Beans 410g", usd: 1.00 },
+      { name: "Gloria Plain flour 2kg", usd: 2.50 }, { name: "Gloria Self Raising flour 2kg", usd: 2.15 }, { name: "Salt Cerebos 1KG", usd: 1.80 },
+      { name: "Red Seal Fine salt 1kg", usd: 1.00 }, { name: "Lucky Star Sardines Tomato 155g", usd: 1.35 }, { name: "Royal Ocean Pilchards in chilli", usd: 1.00 },
+      { name: "Bull Brand Corned Meat 300g", usd: 3.00 }, { name: "Kellog Corn Flakes 500g", usd: 4.25 }, { name: "Jungle Oats", usd: 3.60 },
+      { name: "Kefalos Muesli", usd: 4.90 }, { name: "Cerevita", usd: 5.65 }, { name: "Mahatma White Rice 2kg", usd: 2.90 },
+      { name: "Probands White Rice 2kg", usd: 3.15 }, { name: "Red Seal Pearlenta 10kg", usd: 7.60 }, { name: "Ekono White Rice 2kg", usd: 2.10 },
+      { name: "Silo Roller Meal 10KG", usd: 6.05 }, { name: "Ideal Parboiled Rice 2kg", usd: 2.10 }, { name: "Mega White Rice 2kg", usd: 2.15 },
+      { name: "Huletts Brown Sugar 2kg", usd: 2.95 }, { name: "Gold Star White Sugar", usd: 2.95 }, { name: "Mamas Mixed Fruit Jam 500g", usd: 1.85 },
+      { name: "Sun Jam Mixed fruit 500g", usd: 1.85 }, { name: "Probrands Peanut Butter 375ml", usd: 2.00 }, { name: "Lobels Cookies 150g Assorted", usd: 1.60 },
+      { name: "Yum Yum cream 150g Assorted", usd: 0.50 }, { name: "Arenel Creams 150g Assorted", usd: 0.60 }, { name: "Ekono Spaghetti 400g", usd: 0.50 },
+      { name: "Mega Spaghetti 400g", usd: 0.50 }, { name: "Mega Macaroni 3kg", usd: 3.95 }, { name: "Ekono Macaroni 3kg", usd: 3.95 },
+      { name: "Primo 2kg", usd: 3.80 }, { name: "Rabroy Tomato Sauce 375ml", usd: 1.15 }, { name: "Cheeky Chilli Sauce 100ml", usd: 1.15 },
+      { name: "All Gold Tomato Sauce 700ml", usd: 4.35 }, { name: "Nandos Peri peri 125ml", usd: 2.55 }, { name: "Nandos Peri peri Garlic 125ml", usd: 2.55 },
+      { name: "Chico White Vinegar 375ml", usd: 0.90 }, { name: "Rajah Medium Curry Powder 100g", usd: 1.35 }, { name: "Knorr Hearty Beef Soup 50g", usd: 0.55 },
+      { name: "Knorr Aromat", usd: 1.00 }, { name: "New Seasons Paprika 35g", usd: 0.80 }, { name: "Royco Usavi Mix Chicken", usd: 0.60 },
+      { name: "Madras Curry 50g", usd: 1.00 }, { name: "Cross & Blackwell Tangy Mayonnaise 750g", usd: 3.50 }, { name: "Rabroy Salad Cream 400ml", usd: 1.70 },
+      { name: "Nola Mayonnaise 750g", usd: 3.90 }, { name: "Probrands Tangy Mayonnaise 750g", usd: 3.00 }, { name: "Probands Popcorn 500g", usd: 0.85 },
+      { name: "Meso Popcorn 500g", usd: 1.00 }, { name: "Pepsi 500ml", usd: 0.50 }, { name: "Mirinda Assorted 500ml", usd: 0.50 },
+      { name: "CocaCola Soft Drink 440ml", usd: 0.60 }, { name: "Delta 300ml Assorted", usd: 0.50 }, { name: "Delta 2ltr Assorted", usd: 2.05 },
+      { name: "Delta cans 330ml Assorted", usd: 0.75 }, { name: "Quench Mango Drink 2ltr", usd: 2.95 }, { name: "Mazoe Orange Crush Juice 2ltr", usd: 3.90 },
+      { name: "Mazoe Blackberry Syrup 2ltr", usd: 3.60 }, { name: "Bally House Orange Crush 2ltr", usd: 2.40 }, { name: "Mazoe Cream Soda 2ltr", usd: 2.90 },
+      { name: "Mazoe Peach 2ltr", usd: 2.90 }, { name: "Aquaclear Mineral water", usd: 0.25 }, { name: "Zimpure Mineral Water", usd: 0.25 },
+      { name: "Perfection bar soap 1kg", usd: 1.50 }, { name: "Boom toilet cleaner 500ml", usd: 1.50 }, { name: "Boom Pine Gel 500ml", usd: 1.50 },
+      { name: "Toilet Duck Liquid 500ml", usd: 3.60 }, { name: "Boomforce Scouring Powder 500g", usd: 1.00 }, { name: "Kiwi Shoe polish black 50ml", usd: 1.25 },
+      { name: "Kiwi Shoe polish black 100ml", usd: 2.75 }, { name: "Cobra Polish 300ml", usd: 3.85 }, { name: "Spotless Thick Bleach 750ml", usd: 1.80 },
+      { name: "Boom Washing Powder 500g", usd: 1.50 }, { name: "Boom plus 1kg", usd: 2.95 }, { name: "Sunlight Powder 1kg", usd: 3.50 },
+      { name: "Boom plus 2kg", usd: 5.30 }, { name: "Maq Washing Powder 2kg", usd: 6.00 }, { name: "Aloha Washing Powder 2kg", usd: 5.30 },
+      { name: "Sunlight Dishwashing liquid 750ml", usd: 3.40 }, { name: "Dratel Dishwashing liquid 750ml", usd: 1.60 }, { name: "Sta-soft Refill Assorted 500ml", usd: 3.00 },
+      { name: "Sta-soft Aromatherapy 2ltr", usd: 3.95 }, { name: "Jade Soap Assorted 250g", usd: 1.00 }, { name: "Geisha Assorted 225g", usd: 1.10 },
+      { name: "Lux Assorted 175g", usd: 1.00 }, { name: "Dettol Assorted 175g", usd: 1.00 }, { name: "Protex Assorted 150g", usd: 1.55 },
+      { name: "Anytime Toilet Tissues 4s", usd: 1.15 }, { name: "Lulu Classic Tissue 2 plys 4s", usd: 1.99 }, { name: "Nova 2ply 4s", usd: 3.60 },
+      { name: "Baby Soft 4s", usd: 4.60 }, { name: "Colgate Toothpaste 100ml/150g", usd: 1.00 }, { name: "Colgate Herbal 50ml", usd: 1.85 },
+      { name: "Nivea Assorted 400ml", usd: 9.80 }, { name: "Oh So Heavenly Assorted 470ml", usd: 6.60 }, { name: "Vaseline Body Cream 400ml", usd: 6.00 },
+      { name: "Nivea Roll On 50ml", usd: 2.00 }, { name: "Dove Roll on 50ml", usd: 3.10 }, { name: "Stayfree Maxi pads 8s", usd: 1.10 },
+      { name: "Kotex Maxi 8s", usd: 2.20 }, { name: "Kotex Pantyliners 20s", usd: 2.30 }, { name: "Potatoes 10kg", usd: 10.00 },
+      { name: "Onions Per KG", usd: 1.50 }, { name: "Cabbage", usd: 1.40 }, { name: "Apples 1.5kg", usd: 3.29 },
+      { name: "Bananas Per KG", usd: 1.55 }, { name: "Oranges 2kg", usd: 1.80 }, { name: "Carrots 1kg", usd: 1.49 },
+      { name: "Green beans", usd: 1.00 }, { name: "Commercial Beef cut", usd: 6.99 }, { name: "Russian Sausages per kg", usd: 6.20 },
+      { name: "Beef Mince Per kg", usd: 7.99 }, { name: "Value Chicken cuts", usd: 4.50 }, { name: "Breams fish per kg", usd: 6.99 }, { name: "Pork chops per kg", usd: 6.99 }
+    ];
+
+    let sb = null, authWatched = false;
+
+    function createSb() {
+      if (sb) return sb;
+      const lib = window.supabase;
+      if (!lib || typeof lib.createClient !== 'function') return null;
+      try { sb = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (err) { sb = null; }
+      return sb;
+    }
+    function loadScript(src) { return new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Could not load ' + src)); document.head.appendChild(s); }); }
+    async function ensureClient() { if (createSb()) return sb; try { await loadScript(FALLBACK_LIB); } catch (err) { console.error(err); } return createSb(); }
+    function withTimeout(promise, ms = REQUEST_TIMEOUT_MS) { let timer; const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), ms); }); return Promise.race([promise, timeout]).finally(() => clearTimeout(timer)); }
+    function friendlyError(err) { const msg = (err && err.message) || ''; if (msg === 'timeout') return 'Service took too long.'; if (/failed to fetch|networkerror/i.test(msg)) return 'Could not reach service. Check connection.'; return msg || 'Something went wrong.'; }
+    function redirectUrl() { return /^https?:/.test(window.location.protocol) ? window.location.origin + window.location.pathname : undefined; }
+
+    // ==========================================
+    // 2. HELPERS
+    // ==========================================
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const pad = (n) => String(n).padStart(2, '0');
+    const dkey = (d = new Date()) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    const addDays = (k, n) => { const d = new Date(k + 'T12:00:00'); d.setDate(d.getDate() + n); return dkey(d); };
+    const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+    const uid = () => Math.random().toString(36).slice(2, 9);
+    const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+    const fmtQty = (v) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
+    const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening'; };
+    const byId = (list, id) => list.find((x) => x.id === id);
+    const fmtMoney = (usd) => { const zig = usd * ZIG_RATE; return `$${usd.toFixed(2)} USD / ${zig.toFixed(2)} ZiG`; };
+
+    let toastTimer;
+    function toast(text) { const t = $('toast'); t.textContent = text; t.classList.remove('hidden'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 2600); }
+    function switchAuthView(view) { $('signin-view').classList.toggle('hidden', view !== 'signin'); $('signup-view').classList.toggle('hidden', view !== 'signup'); $('recovery-view').classList.add('hidden'); clearMessage(); }
+    function showMessage(text, type) { const m = $('message'); m.textContent = text; m.className = 'message ' + type; }
+    function clearMessage() { $('message').className = 'message'; }
+
+    // ==========================================
+    // 3. STATE & SYNC
+    // ==========================================
+    let user = null, S = null, tab = 'today', planDay = dkey(), weather = null, focus = { end: 0, total: 0, timer: null };
+    function today() { return dkey(); }
+    function emptyState() { return { v: 1, profile: { name: '', location: '', weatherLocation: null, waterGoal: 2000, cur: '$', theme: 'sage' }, tasks: [], water: {}, energy: {}, focusMin: {}, stock: [], shop: [], routines: [], money: { income: 0, savings: 0, bills: [], tx: [] } }; }
+    function seedState() { const s = emptyState(), t = today(); s.tasks = [{ id: uid(), title: 'Finish job application', time: '09:00', mins: 45, area: 'Work', date: t, done: false, ex: true, repeat: 'none' }]; const K = (name, area, qty, unit, low) => ({ id: uid(), name, area, qty, unit, low, ex: true }); s.stock = [K('Cooking oil', 'Kitchen', 0.5, 'L', 1)]; const R = (name, area, every, ago) => ({ id: uid(), name, area, every, last: addDays(t, -ago), ex: true }); s.routines = [R('Wash everyday clothes', 'Laundry', 4, 3)]; return s; }
+    function normalize(raw) { const d = emptyState(), r = raw && typeof raw === 'object' ? raw : {}; const out = Object.assign({}, d, r); out.profile = Object.assign({}, d.profile, r.profile || {}); out.money = Object.assign({ income: 0, savings: 0, bills: [], tx: [] }, r.money || {}); ['tasks', 'stock', 'shop', 'routines'].forEach((k) => { if (!Array.isArray(out[k])) out[k] = []; }); ['bills', 'tx'].forEach((k) => { if (!Array.isArray(out.money[k])) out.money[k] = []; }); ['water', 'energy', 'focusMin'].forEach((k) => { if (!out[k] || typeof out[k] !== 'object') out[k] = {}; }); for(const list of [out.tasks,out.stock,out.shop,out.routines,out.money.bills,out.money.tx]){for(const item of list){if(item&&typeof item==='object'&&!/^[a-zA-Z0-9_-]{1,100}$/.test(String(item.id||'')))item.id=uid();}} return out; }
+    const storeKey = () => 'dailynest.v1.' + user.id;
+    let saveWarned = false, cloud = { revision: null, dirty: false, ready: false, conflict: false, busy: false, generation: 0, status: 'Preparing your data…', lastSeen: null }, syncTimer = null, authEpoch = 0, enteringUser = null, authReady = Promise.resolve(), recoveryMode = false;
+    const metaKey = () => storeKey() + '.sync';
+    function localSave() { if (!user || !S) return; try { localStorage.setItem(storeKey(), JSON.stringify(S)); localStorage.setItem(metaKey(), JSON.stringify({revision:cloud.revision,dirty:cloud.dirty})); } catch (e) { if (!saveWarned) { saveWarned = true; toast('Local saving blocked.'); } } }
+    function save() { if (!user || !S) return; cloud.dirty = true; cloud.generation++; localSave(); setSyncStatus(cloud.conflict ? 'Conflict: resolve before syncing.' : 'Changes pending sync.'); clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 1000); }
+    function loadState() { try { const r = localStorage.getItem(storeKey()); if (r) return normalize(JSON.parse(r)); } catch(e) { console.error(e); } return emptyState(); }
+    function setSyncStatus(text) { cloud.status=text; if ($('sync-status')) $('sync-status').textContent=text; if ($('conflict-btn')) $('conflict-btn').hidden=!cloud.conflict; }
+    async function cloudRead(id) { const {data,error}=await withTimeout(sb.from('dailynest_state').select('data,revision,updated_at').eq('user_id',id).maybeSingle()); if(error) throw error; return data; }
+    function applyRemote(row) { S=normalize(row.data); cloud.revision=row.revision;cloud.dirty=false;cloud.conflict=false;cloud.lastSeen=row.updated_at;localSave(); setSyncStatus('Cloud up to date · '+new Date(row.updated_at).toLocaleString()); }
+    function syncFailure(err) { console.error(err); setSyncStatus('Not synced: '+(err.message || 'Connection unavailable')+'.'); }
+    async function bootstrapCloud(epoch) { const id=user.id; cloud.ready=false; try { let raw=null;try{raw=JSON.parse(localStorage.getItem(metaKey())||'null')}catch(e){} cloud.revision=raw&&Number.isInteger(raw.revision)?raw.revision:null; cloud.dirty=raw?!!raw.dirty:!!localStorage.getItem(storeKey()); const row=await cloudRead(id);if(epoch!==authEpoch||user?.id!==id)return; cloud.ready=true; if(row){ if(cloud.dirty){ if(cloud.revision!==row.revision){cloud.conflict=true;setSyncStatus('Cloud and local differ. Resolve conflict.');} else setSyncStatus('Local changes ready to upload.'); }else applyRemote(row); }else{ if(cloud.revision!==null){cloud.conflict=true;setSyncStatus('Cloud copy missing. Resolve.');} else {cloud.dirty=true;setSyncStatus('Ready to create cloud copy.');} } localSave(); }catch(e){if(epoch===authEpoch)syncFailure(e)} }
+    async function syncNow() { if(!user||!S||!sb||cloud.busy||cloud.conflict)return; const epoch=authEpoch,id=user.id;cloud.busy=true; try{ if(!cloud.ready){await bootstrapCloud(epoch);if(epoch!==authEpoch||!cloud.ready||cloud.conflict)return;} if(cloud.dirty){ const gen=cloud.generation,payload=JSON.parse(JSON.stringify(S)); setSyncStatus('Saving to cloud…'); const {data,error}=await withTimeout(sb.rpc('dailynest_save_state',{p_data:payload,p_expected_revision:cloud.revision})); if(epoch!==authEpoch||user?.id!==id)return;if(error)throw error; if(!data||data.ok!==true){cloud.conflict=true;setSyncStatus('Another device changed cloud. Resolve.');return;} cloud.revision=data.revision;cloud.lastSeen=data.updated_at;cloud.dirty=cloud.generation!==gen;localSave(); setSyncStatus(cloud.dirty?'More changes pending…':'Cloud saved · '+new Date(data.updated_at).toLocaleString()); if(cloud.dirty){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,700)} }else{ const row=await cloudRead(id);if(epoch!==authEpoch)return; if(row&&row.revision!==cloud.revision){if(cloud.dirty){cloud.conflict=true;setSyncStatus('Both devices changed. Resolve.');}else{applyRemote(row);renderTab();weather=null;loadWeather();}} else setSyncStatus('Cloud up to date'+(cloud.lastSeen?' · '+new Date(cloud.lastSeen).toLocaleString():'')); } }catch(e){if(epoch===authEpoch)syncFailure(e)}finally{if(epoch===authEpoch)cloud.busy=false;} }
+    function backupSnapshot(state,label='backup') { const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'})); a.href=url;a.download='dailynest-'+label+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000); }
+    async function resolveConflict(){ if(!user||cloud.busy)return; const id=user.id,epoch=authEpoch; try{ const row=await cloudRead(id);if(epoch!==authEpoch)return; const answer=prompt('Choose CLOUD to use cloud copy, or LOCAL to replace cloud with this device. Cancel leaves both unchanged.'); if(answer==='CLOUD'&&row){backupSnapshot(S,'local-before-conflict');applyRemote(row);renderTab();loadWeather();} else if(answer==='LOCAL'){ if(!confirm('Replace cloud with this device?'))return; if(row)backupSnapshot(row.data,'cloud-before-conflict'); cloud.revision=row?row.revision:null;cloud.conflict=false;cloud.ready=true;cloud.dirty=true;cloud.generation++;localSave();await syncNow(); } }catch(e){syncFailure(e)} }
+    window.addEventListener('online',()=>syncNow());
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S&&!document.querySelector('input:focus,select:focus,textarea:focus'))syncNow()});
+    setInterval(()=>{if(S&&!document.hidden&&!document.querySelector('input:focus,select:focus,textarea:focus'))syncNow()},60000);
+
+    // ==========================================
+    // 4. DERIVED & WEATHER
+    // ==========================================
+    const dayTasks = (k) => S.tasks.filter((t) => t.date === k).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+    const waterToday = () => num(S.water[today()]);
+    const stockLow = () => S.stock.filter((i) => num(i.qty) <= num(i.low));
+    const routineGap = (r) => daysBetween(r.last || '1970-01-01', today()) - num(r.every || 1);
+    const routineDue = () => S.routines.filter((r) => routineGap(r) >= 0 && r.area !== 'Personal');
+    const monthKey = () => today().slice(0, 7);
+    const daysLeftInMonth = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate() - n.getDate() + 1; };
+    function moneyNow() { const m = S.money, mk = monthKey(); const spent = m.tx.filter((x) => x.date.slice(0, 7) === mk).reduce((a, x) => a + num(x.amt), 0); const bills = m.bills.reduce((a, b) => a + num(b.amt), 0); const available = num(m.income) - bills - num(m.savings) - spent; return { spent, bills, savings: num(m.savings), income: num(m.income), available, perDay: available / daysLeftInMonth() }; }
+    function money(v) { const c = S.profile.cur || '$', n = Math.abs(v); const s = n.toLocaleString(undefined, { minimumFractionDigits: n < 1000 ? 2 : 0, maximumFractionDigits: 2 }); return (v < 0 ? '−' : '') + c + (c.length > 1 ? ' ' : '') + s; }
+    function billsDueSoon() { const mk = monthKey(), d = new Date().getDate(); return S.money.bills.filter((b) => b.paid !== mk && num(b.day) - d <= 3 && num(b.day) - d >= -10); }
+
+    function wxCodeText(c) { if (c === 0) return 'Clear'; if (c <= 3) return 'Partly cloudy'; if (c === 45 || c === 48) return 'Fog'; if (c >= 51 && c <= 67) return 'Rain'; if (c >= 80 && c <= 82) return 'Showers'; if (c >= 95) return 'Thunderstorms'; return 'Cloudy'; }
+    function wxLine() { if (!S.profile.weatherLocation) return 'Choose weather town in Me'; if (!weather) return 'Weather loading…'; if (weather.err) return 'Weather unavailable'; return (weather.fetched && Date.now()-weather.fetched>3600000?'Cached · ':'') + Math.round(weather.temp) + '° ' + wxCodeText(weather.code) + ' · high ' + Math.round(weather.hi) + '° · UV ' + Math.round(weather.uv) + ' · rain ' + Math.round(weather.rain) + '%'; }
+    
+    // SMART WEATHER ADVICE - CLOTHING & UMBRELLA
+    function planAdvice() {
+      const a = [];
+      if (!weather || weather.err) return 'Weather data unavailable.';
+      // Umbrella advice
+      if (weather.rain >= 40 || (weather.code >= 51 && weather.code <= 67) || weather.code >= 95) a.push(' High chance of rain. Carry an umbrella!');
+      // Clothing advice based on temperature
+      if (weather.hi < 12) a.push('🧥 It\'s cold today (' + Math.round(weather.hi) + '°). Wear a jacket or coat.');
+      else if (weather.hi < 20) a.push('🧶 Cool day (' + Math.round(weather.hi) + '°). A light sweater or long sleeves will be comfortable.');
+      else if (weather.hi < 28) a.push('👕 Pleasant weather (' + Math.round(weather.hi) + '°). T-shirt and light clothes are perfect.');
+      else a.push('☀️ Very hot (' + Math.round(weather.hi) + '°). Wear loose, light-colored cotton and a hat.');
+      if (weather.uv >= 3) a.push('🧴 UV is ' + Math.round(weather.uv) + '. Wear sunscreen.');
+      return a.join(' ') || 'A mild day. Plan outdoor jobs whenever suits you.';
+    }
+
+    function attention() {
+      const out = [], h = new Date().getHours(), goal = num(S.profile.waterGoal), w = waterToday();
+      if (weather && !weather.err && weather.uv >= 3) out.push({ t: 'UV is ' + Math.round(weather.uv) + ' today. Put on sunscreen.', go: null });
+      if (weather && !weather.err && weather.hi >= 33) out.push({ t: 'It is hot today (' + Math.round(weather.hi) + '°). Drink extra water.', go: null });
+      if (h >= 11 && w < goal * 0.4) out.push({ t: 'Water is at ' + w + ' ml of ' + goal + ' ml. Have a glass now.', go: null, act: 'water' });
+      else if (h >= 16 && w < goal * 0.75) out.push({ t: 'Water is at ' + w + ' ml of ' + goal + ' ml. Catch up.', go: null, act: 'water' });
+      const low = stockLow();
+      if (low.length) out.push({ t: low.length + ' item(s) low at home: ' + low.slice(0, 3).map((i) => i.name).join(', '), go: 'home' });
+      billsDueSoon().forEach((b) => out.push({ t: b.name + ' (' + money(num(b.amt)) + ') due day ' + b.day + '.', go: 'money' }));
+      const due = routineDue();
+      if (due.length) out.push({ t: due.length + ' routine(s) due: ' + due.slice(0, 2).map((r) => r.name).join(', '), go: 'home' });
+      return out;
+    }
+
+    // ==========================================
+    // 5. RENDER: TODAY
+    // ==========================================
+    function renderToday() {
+      const t = today(), open = dayTasks(t).filter((x) => !x.done), done = dayTasks(t).filter((x) => x.done).length;
+      const name = S.profile.name || 'there', goal = num(S.profile.waterGoal), w = waterToday();
+      const m = moneyNow(), low = stockLow(), att = attention();
+      const energy = S.energy[t] || '';
+      const personal = S.routines.filter((r) => r.area === 'Personal');
+      let h = '<div class="dash-header"><h2 class="greeting">' + greet() + ', ' + esc(name) + '</h2><div class="location-weather">' + esc(S.profile.weatherLocation ? S.profile.weatherLocation.label : 'Weather location not selected') + ' · <span id="wx-line">' + esc(wxLine()) + '</span></div></div>';
+      h += '<div class="card"><h3 class="card-title">Your day, at a glance</h3><div class="stat-grid">' + '<div class="stat-box"><span class="stat-value">' + open.length + '</span><span class="stat-label">Priorities left' + (done ? ' · ' + done + ' done' : '') + '</span></div>' + '<div class="stat-box"><span class="stat-value">' + w + ' ml</span><span class="stat-label">Water today of ' + goal + ' ml</span><button type="button" class="btn tiny primary mini" data-act="water">+ 250 ml</button></div></div></div>';
+      if (att.length) { h += '<div class="card"><h3 class="card-title">Needs attention</h3>'; att.slice(0, 5).forEach((a) => { h += '<div class="attn"><p>' + esc(a.t) + '</p>' + (a.go ? '<button type="button" class="tiny" data-go="' + a.go + '">Open</button>' : a.act === 'water' ? '<button type="button" class="tiny primary" data-act="water">+ 250 ml</button>' : '') + '</div>'; }); h += '</div>'; }
+      h += '<div class="card"><h3 class="card-title"><span>Your top priorities</span><button type="button" class="link-btn" data-go="plan">Open plan</button></h3>';
+      if (!open.length) h += '<p class="empty">' + (done ? 'Everything planned for today is done.' : 'Nothing planned for today.') + '</p>';
+      open.slice(0, 3).forEach((x) => { h += taskRow(x, false); });
+      h += '</div>';
+      h += focusBanner();
+      h += '<div class="card"><h3 class="card-title"><span>Running low at home</span><button type="button" class="link-btn" data-go="home">Open home</button></h3>';
+      if (!low.length) h += '<p class="empty">Nothing is low.</p>';
+      low.slice(0, 3).forEach((i) => { h += '<div class="task-item"><div class="task-content"><p class="task-title">' + esc(i.name) + '</p><p class="task-meta">' + esc(i.area) + ' · ' + (num(i.qty) <= 0 ? 'none left' : fmtQty(num(i.qty)) + ' ' + esc(i.unit) + ' remaining') + '</p></div></div>'; });
+      h += '</div>';
+      h += '<div class="card"><h3 class="card-title"><span>Available to spend</span><button type="button" class="link-btn" data-go="money">Open money</button></h3>';
+      if (!m.income) h += '<p class="empty">Set monthly income in Money.</p>';
+      else h += '<span class="big-money' + (m.available < 0 ? ' neg' : '') + '">' + money(m.available) + '</span><p class="note" style="text-align:center">About ' + money(Math.max(0, m.perDay)) + ' a day for the rest of the month</p><div class="money-breakdown"><div class="money-item"><span class="money-val">' + money(m.bills) + '</span><span class="money-lbl">Bills reserved</span></div><div class="money-item"><span class="money-val" style="color:var(--success)">' + money(m.savings) + '</span><span class="money-lbl">Savings reserved</span></div></div>';
+      h += '</div>';
+      h += '<div class="card"><h3 class="card-title">How\'s your energy?</h3><div class="energy-row">' + ['Low', 'Okay', 'Good', 'Great'].map((e) => '<button type="button" class="energy-btn' + (energy === e ? ' active' : '') + '" data-act="energy" data-v="' + e + '">' + e + '</button>').join('') + '</div>' + '<h3 class="card-title" style="margin-top:20px">Personal routines</h3>';
+      if (!personal.length) h += '<p class="empty">Add routines in Home.</p>';
+      personal.forEach((r) => { const isDone = r.last === t; h += '<div class="task-item' + (isDone ? ' done' : '') + '"><button type="button" class="task-check' + (isDone ? ' checked' : '') + '" data-act="routine-toggle" data-id="' + r.id + '"></button><div class="task-content"><p class="task-title">' + esc(r.name) + '</p></div></div>'; });
+      h += '</div>';
+      $('tab-today').innerHTML = h;
+    }
+    function taskRow(x, withActions) {
+      const meta = [x.time || null, x.area, x.mins ? x.mins + ' min' : null, x.repeat !== 'none' ? '🔁 ' + x.repeat : null].filter(Boolean).join(' · ');
+      return '<div class="task-item' + (x.done ? ' done' : '') + '"><button type="button" class="task-check' + (x.done ? ' checked' : '') + '" data-act="task-toggle" data-id="' + x.id + '"></button>' + '<div class="task-content"><p class="task-title">' + esc(x.title) + (x.ex ? '<span class="tag">Example</span>' : '') + '</p><p class="task-meta">' + esc(meta) + '</p></div>' + (withActions ? '<div class="row-actions">' + (x.date === today() && !x.done ? '<button type="button" class="tiny" data-act="task-tomorrow" data-id="' + x.id + '">Tomorrow</button>' : '') + '<button type="button" class="tiny" data-act="task-del" data-id="' + x.id + '">×</button></div>' : '') + '</div>';
+    }
+    function focusBanner() { const running = focus.end > Date.now(); return '<div class="focus-banner"><h3>Today\'s Focus</h3><p>' + (S.focusMin[today()] ? num(S.focusMin[today()]) + ' min logged today. ' : '') + 'One thing at a time.' + '</p>' + '<div class="focus-clock" id="focus-clock"' + (running ? '' : ' hidden') + '>' + clockText() + '</div>' + (running ? '<button type="button" class="btn-white" data-act="focus-stop">Stop</button>' : '<button type="button" class="btn-white" data-act="focus-start">Start 25-min focus</button>') + '</div>'; }
+    function clockText() { const s = Math.max(0, Math.round((focus.end - Date.now()) / 1000)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+    function tickFocus() { if (!focus.end) return; if (Date.now() >= focus.end) { const mins = Math.round(focus.total / 60); S.focusMin[today()] = num(S.focusMin[today()]) + mins; save(); focus = { end: 0, total: 0, timer: null }; toast(mins + ' min focus logged.'); if (tab === 'today') renderToday(); return; } const c = $('focus-clock'); if (c) c.textContent = clockText(); }
+    setInterval(tickFocus, 1000);
+
+    // ==========================================
+    // 6. RENDER: PLAN (WEEKLY)
+    // ==========================================
+    function renderPlan() {
+      const todayDate = new Date(today() + 'T12:00:00'); const weekDays = []; const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for(let i = 0; i < 7; i++) { const d = new Date(todayDate); d.setDate(d.getDate() + i); const dk = dkey(d); weekDays.push({ key: dk, name: (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayNames[d.getDay()]), full: d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' }) }); }
+      if(!weekDays.find(d => d.key === planDay)) planDay = today();
+      const k = planDay; const list = dayTasks(k); const mins = list.filter((x) => !x.done).reduce((a, x) => a + num(x.mins), 0), done = list.filter((x) => x.done).length;
+      const selectedDay = weekDays.find(d => d.key === k) || weekDays[0];
+      let h = '<div class="dash-header"><h2 class="page-title">Weekly Plan</h2><div class="location-weather">' + selectedDay.full + '</div></div>';
+      h += '<div class="card"><div class="seg" role="group" aria-label="Week">';
+      weekDays.forEach((d) => { h += '<button type="button" data-act="plan-day" data-v="' + d.key + '" aria-pressed="' + (planDay === d.key) + '">' + d.name + '</button>'; });
+      h += '</div>';
+      h += '<h3 class="card-title" style="margin-top:16px"><span>Tasks for ' + selectedDay.name + '</span><span>' + (list.length ? done + ' of ' + list.length + ' done' : '') + '</span></h3>';
+      if (!list.length) h += '<p class="empty">Nothing planned for ' + selectedDay.name + '.</p>';
+      list.forEach((x) => { h += taskRow(x, true); });
+      h += '<form data-form="task"><div class="form-row"><label class="fld span-all" for="pl-title">Task<input id="pl-title" name="title" type="text" maxlength="100" required placeholder="What needs doing?"></label>' + '<div class="form-row three" style="margin-top:0"><label class="fld" for="pl-time">Time<input id="pl-time" name="time" type="time"></label><label class="fld" for="pl-mins">Minutes<input id="pl-mins" name="mins" type="number" min="5" max="480" step="5" value="30"></label><label class="fld" for="pl-area">Type<select id="pl-area" name="area"><option>Work</option><option>Home</option><option>Errands</option><option>Personal</option></select></label></div>' + '<label class="fld span-all" for="pl-repeat">Repeat<select id="pl-repeat" name="repeat"><option value="none">No repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label>' + '<button class="btn" type="submit">Add to ' + selectedDay.name + '</button></div></form></div>';
+      h += '<div class="card"><h3 class="card-title">Week at a glance</h3>';
+      weekDays.forEach(d => { const dt = S.tasks.filter(t => t.date === d.key); const pending = dt.filter(t => !t.done).length; const completed = dt.filter(t => t.done).length; h += '<div class="attn"><p><strong>' + d.name + '</strong> - ' + pending + ' pending' + (completed ? ', ' + completed + ' done' : '') + '</p><button type="button" class="tiny" data-act="plan-day" data-v="' + d.key + '">View</button></div>'; });
+      h += '</div>';
+      const dueRoutines = routineDue().filter((r) => !list.some((x) => x.routineId === r.id)).slice(0, 4);
+      if (dueRoutines.length) { h += '<div class="card"><h3 class="card-title">Due at home</h3>'; dueRoutines.forEach((r) => { h += '<div class="task-item"><div class="task-content"><p class="task-title">' + esc(r.name) + '</p><p class="task-meta">' + esc(r.area) + ' · ' + rStatus(r)[0] + '</p></div><div class="row-actions"><button type="button" class="tiny primary" data-act="routine-plan" data-id="' + r.id + '">Add to plan</button></div></div>'; }); h += '</div>'; }
+      if (weather && !weather.err) h += '<div class="card"><h3 class="card-title">Smart Weather Advice</h3><p class="note" style="margin:0">' + esc(planAdvice()) + '</p></div>';
+      $('tab-plan').innerHTML = h;
+    }
+
+    // ==========================================
+    // 7. RENDER: HOME (With Price List)
+    // ==========================================
+    function rStatus(r) { const g = routineGap(r); if (g > 0) return ['Overdue ' + g + ' d', 'crit']; if (g === 0) return ['Due today', 'warn']; return ['In ' + (-g) + ' d', 'good']; }
+    function renderHome() {
+      const low = stockLow(), t = today();
+      let shopTotalUsd = 0;
+      S.shop.forEach(s => { if(!s.done && s.usdPrice) shopTotalUsd += num(s.usdPrice) * num(s.qty); });
+      
+      let h = '<div class="dash-header"><h2 class="page-title">Home</h2><div class="location-weather">Stock, shopping and routines</div></div>';
+      h += '<div class="card"><h3 class="card-title"><span>Running low</span><span>' + low.length + ' item(s)</span></h3>';
+      if (!low.length) h += '<p class="empty">Nothing is low.</p>';
+      else { low.forEach((i) => { const onList = S.shop.some((s) => s.stockId === i.id); h += '<div class="task-item"><div class="task-content"><p class="task-title">' + esc(i.name) + '<span class="pill ' + (num(i.qty) <= 0 ? 'crit' : 'warn') + '" style="margin-left:8px">' + (num(i.qty) <= 0 ? 'Out' : 'Low') + '</span></p><p class="task-meta">' + fmtQty(num(i.qty)) + ' ' + esc(i.unit) + ' left</p></div><div class="row-actions"><button type="button" class="tiny' + (onList ? '' : ' primary') + '" data-act="stock-tolist" data-id="' + i.id + '"' + (onList ? ' disabled' : '') + '>' + (onList ? 'On list' : 'To list') + '</button></div></div>'; }); h += '<button type="button" class="btn" data-act="low-tolist">Add all low items to list</button>'; }
+      h += '</div>';
+
+      h += '<div class="card"><h3 class="card-title"><span>Shopping list</span><span>' + S.shop.filter((s) => !s.done).length + ' to buy</span></h3>';
+      if(shopTotalUsd > 0) h += '<p class="note" style="margin-bottom:12px; font-weight:600; color:var(--sage-dark)">Estimated Total: ' + fmtMoney(shopTotalUsd) + '</p>';
+      if (!S.shop.length) h += '<p class="empty">Your list is empty.</p>';
+      S.shop.forEach((s) => {
+        let priceText = '';
+        if(s.usdPrice) priceText = ' · ' + fmtMoney(num(s.usdPrice) * num(s.qty));
+        h += '<div class="task-item' + (s.done ? ' done' : '') + '"><button type="button" class="task-check' + (s.done ? ' checked' : '') + '" data-act="shop-toggle" data-id="' + s.id + '"></button><div class="task-content"><p class="task-title">' + esc(s.name) + '</p><p class="task-meta">' + fmtQty(num(s.qty)) + (s.unit ? ' ' + esc(s.unit) : '') + priceText + '</p></div><div class="row-actions"><button type="button" class="tiny" data-act="shop-edit" data-id="' + s.id + '">Edit</button><button type="button" class="tiny" data-act="shop-del" data-id="' + s.id + '">×</button></div></div>';
+      });
+      if (S.shop.some((s) => s.done)) h += '<button type="button" class="btn" data-act="shop-finish">I bought the ticked items</button>';
+      
+      h += '<form data-form="shop" style="position:relative"><div class="form-row three"><label class="fld span-all" for="sh-name">Add an item (start typing for prices)<input id="sh-name" name="name" type="text" maxlength="80" required placeholder="e.g. Milk" autocomplete="off"></label><label class="fld" for="sh-qty">Qty<input id="sh-qty" name="qty" type="number" min="0" step="0.5" value="1"></label><label class="fld" for="sh-unit">Unit<select id="sh-unit" name="unit"><option value="pcs">pcs</option><option value="kg">kg</option><option value="L">L</option><option value="pack">pack</option><option value="box">box</option><option value="bottle">bottle</option></select></label><div style="align-self:end"><button class="btn" type="submit">Add</button></div></div><div id="price-autocomplete" class="autocomplete-list hidden"></div></form></div>';
+
+      h += '<div class="card"><h3 class="card-title"><span>Stock at home</span><span>' + S.stock.length + ' tracked</span></h3>';
+      if (!S.stock.length) h += '<p class="empty">Add things you always want in the house.</p>';
+      S.stock.slice().sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name)).forEach((i) => { h += '<div class="stock-row"><div class="task-content"><p class="task-title" style="margin:0">' + esc(i.name) + '</p><p class="task-meta">' + esc(i.area) + ' · low at ' + fmtQty(num(i.low)) + ' ' + esc(i.unit) + '</p></div>' + '<div class="stepper"><button type="button" data-act="stock-dec" data-id="' + i.id + '">−</button><b>' + fmtQty(num(i.qty)) + ' ' + esc(i.unit) + '</b><button type="button" data-act="stock-inc" data-id="' + i.id + '">+</button></div>' + '<button type="button" class="tiny" data-act="stock-del" data-id="' + i.id + '">×</button></div>'; });
+      h += '<form data-form="stock"><div class="form-row two"><label class="fld span-all" for="st-name">New item<input id="st-name" name="name" type="text" maxlength="60" required placeholder="e.g. Rice"></label><label class="fld" for="st-area">Where<select id="st-area" name="area"><option>Kitchen</option><option>Laundry</option><option>Bathroom</option><option>Other</option></select></label><label class="fld" for="st-unit">Unit<input id="st-unit" name="unit" type="text" maxlength="10" placeholder="kg, L, pack"></label><label class="fld" for="st-qty">Have now<input id="st-qty" name="qty" type="number" min="0" step="0.5" value="1"></label><label class="fld" for="st-low">Low at<input id="st-low" name="low" type="number" min="0" step="0.5" value="1"></label><div class="span-all"><button class="btn" type="submit">Add to stock</button></div></div></form></div>';
+
+      h += '<div class="card"><h3 class="card-title"><span>Laundry and cleaning</span><span>' + routineDue().length + ' due</span></h3>';
+      const rs = S.routines.slice().sort((a, b) => routineGap(b) - routineGap(a));
+      if (!rs.length) h += '<p class="empty">No routines yet.</p>';
+      rs.forEach((r) => { const s = rStatus(r), ago = daysBetween(r.last || '1970-01-01', t); h += '<div class="task-item"><div class="task-content"><p class="task-title">' + esc(r.name) + '</p><p class="task-meta">' + esc(r.area) + ' · every ' + num(r.every) + ' d · last ' + (ago === 0 ? 'today' : ago > 9000 ? 'never' : ago + ' d ago') + '</p></div><div class="row-actions"><span class="pill ' + s[1] + '">' + s[0] + '</span><button type="button" class="tiny primary" data-act="routine-done" data-id="' + r.id + '">' + (r.area === 'Laundry' ? 'Washed' : 'Done') + '</button><button type="button" class="tiny" data-act="routine-del" data-id="' + r.id + '">×</button></div></div>'; });
+      h += '<form data-form="routine"><div class="form-row two"><label class="fld span-all" for="ro-name">New routine<input id="ro-name" name="name" type="text" maxlength="60" required placeholder="e.g. Wash curtains"></label><label class="fld" for="ro-area">Group<select id="ro-area" name="area"><option>Laundry</option><option>Cleaning</option><option>Personal</option></select></label><label class="fld" for="ro-every">Every (days)<input id="ro-every" name="every" type="number" min="1" max="365" value="7"></label><div class="span-all"><button class="btn" type="submit">Add routine</button></div></div></form></div>';
+      $('tab-home').innerHTML = h;
+      
+      setTimeout(() => {
+        const nameInput = $('sh-name');
+        if(nameInput) {
+          nameInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            const list = $('price-autocomplete');
+            if(val.length < 2) { list.classList.add('hidden'); return; }
+            const matches = SHOP_PRICES.filter(p => p.name.toLowerCase().includes(val)).slice(0, 5);
+            if(matches.length === 0) { list.classList.add('hidden'); return; }
+            list.innerHTML = matches.map(p => `<div class="autocomplete-item" data-name="${esc(p.name)}" data-price="${p.usd}">${esc(p.name)} <span class="price-tag">${fmtMoney(p.usd)}</span></div>`).join('');
+            list.classList.remove('hidden');
+            list.querySelectorAll('.autocomplete-item').forEach(item => {
+              item.addEventListener('click', () => {
+                nameInput.value = item.dataset.name;
+                nameInput.dataset.selectedPrice = item.dataset.price;
+                list.classList.add('hidden');
+              });
+            });
+          });
+          document.addEventListener('click', (e) => { if(!e.target.closest('form[data-form="shop"]')) $('price-autocomplete').classList.add('hidden'); });
+        }
+      }, 0);
+    }
+
+    // ==========================================
+    // 8. RENDER: MONEY & ME
+    // ==========================================
+    function renderMoney() {
+      const m = moneyNow(), M = S.money, mk = monthKey();
+      const tx = M.tx.filter((x) => x.date.slice(0, 7) === mk).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 12);
+      let h = '<div class="dash-header"><h2 class="page-title">Money</h2><div class="location-weather">' + new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) + ' · ' + daysLeftInMonth() + ' days left</div></div>';
+      h += '<div class="card"><h3 class="card-title">Available to spend</h3>';
+      if (!m.income) h += '<p class="empty">Enter monthly income below.</p>';
+      else h += '<span class="big-money' + (m.available < 0 ? ' neg' : '') + '">' + money(m.available) + '</span><p class="note" style="text-align:center">' + (m.available < 0 ? 'Over budget this month.' : 'About ' + money(m.perDay) + ' a day for the rest of the month') + '</p>';
+      h += '<div class="money-breakdown"><div class="money-item"><span class="money-val">' + money(m.bills) + '</span><span class="money-lbl">Bills</span></div><div class="money-item"><span class="money-val" style="color:var(--success)">' + money(m.savings) + '</span><span class="money-lbl">Savings</span></div><div class="money-item"><span class="money-val">' + money(m.spent) + '</span><span class="money-lbl">Spent</span></div></div>';
+      h += '<div class="form-row two"><label class="fld" for="mo-income">Monthly income<input id="mo-income" type="number" min="0" step="1" value="' + num(M.income) + '" data-set="income"></label><label class="fld" for="mo-savings">Save each month<input id="mo-savings" type="number" min="0" step="1" value="' + num(M.savings) + '" data-set="savings"></label></div></div>';
+      h += '<div class="card"><h3 class="card-title">Log spending</h3><form data-form="spend"><div class="form-row two"><label class="fld" for="sp-amt">Amount<input id="sp-amt" name="amt" type="number" min="0" step="0.01" inputmode="decimal" required></label><label class="fld" for="sp-note">What for<input id="sp-note" name="note" type="text" maxlength="60" placeholder="Market, airtime"></label><div class="span-all"><button class="btn" type="submit">Log it</button></div></div></form>';
+      if (tx.length) { h += '<h3 class="card-title" style="margin-top:20px">Recent this month</h3>'; tx.forEach((x) => { h += '<div class="task-item"><div class="task-content"><p class="task-title">' + money(num(x.amt)) + (x.note ? ' · ' + esc(x.note) : '') + '</p><p class="task-meta">' + new Date(x.date + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + '</p></div><div class="row-actions"><button type="button" class="tiny" data-act="tx-del" data-id="' + x.id + '">×</button></div></div>'; }); }
+      h += '</div>';
+      h += '<div class="card"><h3 class="card-title"><span>Bills and rent</span><span>' + M.bills.filter((b) => b.paid === mk).length + ' of ' + M.bills.length + ' paid</span></h3>';
+      if (!M.bills.length) h += '<p class="empty">No bills yet.</p>';
+      const d = new Date().getDate();
+      M.bills.slice().sort((a, b) => num(a.day) - num(b.day)).forEach((b) => { const paid = b.paid === mk, diff = num(b.day) - d; const st = paid ? ['Paid', 'good'] : diff < 0 ? ['Overdue', 'crit'] : diff <= 3 ? ['Due soon', 'warn'] : ['Upcoming', 'mute']; h += '<div class="task-item"><div class="task-content"><p class="task-title">' + esc(b.name) + '</p><p class="task-meta">' + money(num(b.amt)) + ' · due day ' + num(b.day) + '</p></div><div class="row-actions"><span class="pill ' + st[1] + '">' + st[0] + '</span><button type="button" class="tiny' + (paid ? '' : ' primary') + '" data-act="bill-toggle" data-id="' + b.id + '">' + (paid ? 'Undo' : 'Paid') + '</button><button type="button" class="tiny" data-act="bill-del" data-id="' + b.id + '">×</button></div></div>'; });
+      h += '<form data-form="bill"><div class="form-row three"><label class="fld span-all" for="bi-name">Bill<input id="bi-name" name="name" type="text" maxlength="50" required placeholder="Rent, Wi-Fi"></label><label class="fld" for="bi-amt">Amount<input id="bi-amt" name="amt" type="number" min="0" step="0.01" required></label><label class="fld" for="bi-day">Due day<input id="bi-day" name="day" type="number" min="1" max="28" value="1"></label><div style="align-self:end"><button class="btn" type="submit">Add</button></div></div></form>';
+      h += '<p class="note">Bills count against available money from start of month.</p></div>';
+      $('tab-money').innerHTML = h;
+    }
+    function renderMe() {
+      const P = S.profile, hasEx = S.tasks.some((x) => x.ex) || S.stock.some((x) => x.ex) || S.routines.some((x) => x.ex);
+      let h = '<div class="dash-header"><h2 class="page-title">Me</h2><div class="location-weather">Your details and settings</div></div>';
+      h += '<div class="card"><h3 class="card-title">Profile</h3><div class="form-row"><label class="fld" for="me-name">Your name<input id="me-name" type="text" maxlength="40" value="' + esc(P.name) + '" data-prof="name"></label><label class="fld" for="me-loc">Location<input id="me-loc" type="text" maxlength="60" value="' + esc(P.location) + '" data-prof="location"></label></div></div>';
+      h += '<div class="card"><h3 class="card-title">Settings</h3><div class="form-row two"><label class="fld" for="me-water">Daily water goal<select id="me-water" data-prof="waterGoal">' + [1500, 2000, 2500, 3000, 3500].map((v) => '<option value="' + v + '"' + (num(P.waterGoal) === v ? ' selected' : '') + '>' + v + ' ml</option>').join('') + '</select></label><label class="fld" for="me-cur">Money symbol<select id="me-cur" data-prof="cur">' + ['$', 'ZiG', 'R', 'P'].map((v) => '<option' + (P.cur === v ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></label></div>';
+      h += '<div class="form-row" style="margin-top:12px"><label class="fld" for="me-theme">Color theme<select id="me-theme" data-prof="theme">' + [['sage', 'Sage & Cream (Default)'], ['dark', 'Midnight Dark'], ['rose', 'Soft Rose'], ['ocean', 'Ocean Blue']].map((v) => '<option value="' + v[0] + '"' + (P.theme === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') + '</select></label></div></div>';
+      h += '<div class="card"><h3 class="card-title">Your data</h3><p class="note" style="margin:0 0 12px">Records sync to your private Supabase account. Offline edits stay here until uploaded.</p>' + '<button type="button" class="btn" data-act="export">Download a backup</button>' + (hasEx ? '<button type="button" class="btn" style="background:var(--cream);color:var(--text-dark);border:1px solid #E0E0E0" data-act="clear-ex">Clear example items</button>' : '') + '</div>';
+      h += '<div class="card"><h3 class="card-title">Account</h3><p class="note" style="margin:0 0 12px">Signed in as ' + esc(user.email || 'your account') + '.</p><button type="button" class="btn" style="background:var(--cream);color:var(--text-dark);border:1px solid #E0E0E0" onclick="handleLogout()">Sign out</button></div>';
+      h += '<div class="disclaimer">Reminders show inside the app while open. No background notifications.</div>';
+      h += '<div class="card"><h3 class="card-title">Weather town</h3><p class="note">Current: '+esc(P.weatherLocation?P.weatherLocation.label:'Not selected')+'</p><form onsubmit="findTown(event)"><label for="weather-town">Town or city</label><input id="weather-town" minlength="2" maxlength="80" placeholder="Binga, Harare…" required><button class="btn" type="submit">Search towns</button></form><div id="town-results"></div></div>';
+      h += '<div class="card"><h3 class="card-title">Install DailyNest</h3><button type="button" class="btn" onclick="installApp()">Install / home-screen help</button><p class="note">'+esc(installStatus)+'</p></div>';
+      h += '<div class="card"><h3 class="card-title">Restore a backup</h3><input id="backup-file" type="file" accept=".json,application/json" onchange="restoreBackup(this.files[0])"><p class="note">Restoring replaces current records.</p></div>';
+      $('tab-me').innerHTML = h;
+    }
+
+    // ==========================================
+    // 9. TABS & ACTIONS
+    // ==========================================
+    const RENDER = { today: renderToday, plan: renderPlan, home: renderHome, money: renderMoney, me: renderMe };
+    function renderTab() { RENDER[tab](); updateNav(); setSyncStatus(cloud.status); }
+    function updateNav() { document.querySelectorAll('.nav-item').forEach((b) => { if (b.dataset.go === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); const old = b.querySelector('.nav-badge'); if (old) old.remove(); const n = badgeFor(b.dataset.go); if (n) { const s = document.createElement('span'); s.className = 'nav-badge'; s.textContent = n; b.appendChild(s); } }); }
+    function badgeFor(t) { if (!S) return 0; if (t === 'home') return stockLow().length + routineDue().length; if (t === 'money') return billsDueSoon().length; return 0; }
+    function goTab(t) { if (!RENDER[t]) return; tab = t; document.querySelectorAll('[data-tab]').forEach((s) => s.classList.toggle('hidden', s.dataset.tab !== t)); renderTab(); $('dashboard-view').scrollTop = 0; window.scrollTo(0, 0); }
+
+    function addShopFromStock(i) { if (S.shop.some((s) => s.stockId === i.id)) return false; S.shop.push({ id: uid(), name: i.name, unit: i.unit, qty: Math.max(1, Math.round((num(i.low) * 2 - num(i.qty)) * 2) / 2), stockId: i.id, done: false }); return true; }
+
+    const ACTIONS = {
+      water() { S.water[today()] = waterToday() + 250; },
+      energy(b) { S.energy[today()] = b.dataset.v; },
+      'task-toggle'(b) { 
+        const x = byId(S.tasks, b.dataset.id); 
+        if (x) {
+          x.done = !x.done;
+          // REPETITIVE TASK LOGIC
+          if(x.done && x.repeat && x.repeat !== 'none') {
+            let nextDate;
+            if (x.repeat === 'daily') {
+              nextDate = addDays(x.date, 1);
+            } else if (x.repeat === 'weekly') {
+              nextDate = addDays(x.date, 7);
+            }
+            if (nextDate) {
+              S.tasks.push({ ...x, id: uid(), date: nextDate, done: false });
+              toast('Next ' + x.repeat + ' task created for ' + nextDate);
+            }
+          }
+        }
+      },
+      'task-del'(b) { S.tasks = S.tasks.filter((x) => x.id !== b.dataset.id); },
+      'task-tomorrow'(b) { const x = byId(S.tasks, b.dataset.id); if (x) { x.date = addDays(today(), 1); x.ex = false; toast('Moved to tomorrow'); } },
+      'plan-day'(b) { planDay = b.dataset.v; renderPlan(); },
+      'routine-toggle'(b) { const r = byId(S.routines, b.dataset.id); if (r) { r.last = r.last === today() ? addDays(today(), -num(r.every)) : today(); r.ex = false; } },
+      'routine-done'(b) { const r = byId(S.routines, b.dataset.id); if (r) { r.last = today(); r.ex = false; toast('Marked done'); } },
+      'routine-del'(b) { S.routines = S.routines.filter((r) => r.id !== b.dataset.id); },
+      'routine-plan'(b) { const r = byId(S.routines, b.dataset.id); if (!r) return; S.tasks.push({ id: uid(), title: r.name, time: '', mins: r.area === 'Laundry' ? 30 : 15, area: 'Home', date: planDay, done: false, routineId: r.id, repeat: 'none' }); },
+      'stock-inc'(b) { const i = byId(S.stock, b.dataset.id); if (i) { i.qty = Math.round((num(i.qty) + ((i.unit === 'kg' || i.unit === 'L') ? 0.5 : 1)) * 100) / 100; i.ex = false; } },
+      'stock-dec'(b) { const i = byId(S.stock, b.dataset.id); if (i) { i.qty = Math.max(0, Math.round((num(i.qty) - ((i.unit === 'kg' || i.unit === 'L') ? 0.5 : 1)) * 100) / 100); i.ex = false; } },
+      'stock-del'(b) { S.stock = S.stock.filter((i) => i.id !== b.dataset.id); S.shop.forEach((s) => { if (s.stockId === b.dataset.id) s.stockId = null; }); },
+      'stock-tolist'(b) { const i = byId(S.stock, b.dataset.id); if (i && addShopFromStock(i)) toast('Added to list'); },
+      'low-tolist'() { let n = 0; stockLow().forEach((i) => { if (addShopFromStock(i)) n++; }); toast(n ? n + ' item(s) added' : 'Already on list'); },
+      'shop-toggle'(b) { const s = byId(S.shop, b.dataset.id); if (s) s.done = !s.done; },
+      'shop-edit'(b) { const s = byId(S.shop, b.dataset.id); if(!s) return; const newName = prompt('Edit name:', s.name); if(newName === null) return; const newQty = prompt('Edit qty:', s.qty); if(newQty === null) return; s.name = newName.trim() || s.name; s.qty = num(newQty) || 1; toast('Updated'); },
+      'shop-del'(b) { S.shop = S.shop.filter((s) => s.id !== b.dataset.id); },
+      'shop-finish'() { const bought = S.shop.filter((s) => s.done); bought.forEach((s) => { const i = s.stockId ? byId(S.stock, s.stockId) : null; if (i) i.qty = Math.round((num(i.qty) + num(s.qty)) * 100) / 100; }); S.shop = S.shop.filter((s) => !s.done); toast(bought.length + ' item(s) bought.'); },
+      'tx-del'(b) { S.money.tx = S.money.tx.filter((x) => x.id !== b.dataset.id); },
+      'bill-toggle'(b) { const x = byId(S.money.bills, b.dataset.id); if (x) x.paid = x.paid === monthKey() ? '' : monthKey(); },
+      'bill-del'(b) { S.money.bills = S.money.bills.filter((x) => x.id !== b.dataset.id); },
+      'clear-ex'() { S.tasks = S.tasks.filter((x) => !x.ex); S.stock = S.stock.filter((x) => !x.ex); S.routines = S.routines.filter((x) => !x.ex); S.shop = S.shop.filter((s) => !s.stockId || byId(S.stock, s.stockId)); toast('Examples cleared'); },
+      'focus-start'() { focus.total = 25 * 60; focus.end = Date.now() + focus.total * 1000; },
+      'focus-stop'() { focus = { end: 0, total: 0, timer: null }; },
+      export() { try { const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dailynest-backup-' + today() + '.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Backup downloaded'); } catch (e) { toast('Could not create backup.'); } }
+    };
+    document.addEventListener('click', (e) => {
+      const go = e.target.closest('[data-go]'); if (go && S) { goTab(go.dataset.go); return; }
+      const b = e.target.closest('[data-act]'); if (!b || !S || !ACTIONS[b.dataset.act]) return;
+      ACTIONS[b.dataset.act](b); save(); renderTab();
+    });
+    const FORMS = {
+      task(f) { const title = f.title.value.trim(); if (!title) return; S.tasks.push({ id: uid(), title, time: f.time.value, mins: Math.min(480, Math.max(5, num(f.mins.value) || 30)), area: f.area.value, date: planDay, done: false, repeat: f.repeat.value || 'none' }); },
+      shop(f) { 
+        const name = f.name.value.trim(); if (!name) return; 
+        let usdPrice = 0;
+        if(f.name.dataset.selectedPrice) usdPrice = num(f.name.dataset.selectedPrice);
+        else { const match = SHOP_PRICES.find(p => p.name.toLowerCase() === name.toLowerCase()); if(match) usdPrice = match.usd; }
+        S.shop.push({ id: uid(), name, qty: num(f.qty.value) || 1, unit: f.unit.value, usdPrice: usdPrice, stockId: null, done: false }); 
+        f.name.dataset.selectedPrice = ''; 
+      },
+      stock(f) { const name = f.name.value.trim(); if (!name) return; S.stock.push({ id: uid(), name, area: f.area.value, qty: num(f.qty.value), unit: f.unit.value.trim(), low: num(f.low.value) }); },
+      routine(f) { const name = f.name.value.trim(); if (!name) return; S.routines.push({ id: uid(), name, area: f.area.value, every: Math.min(365, Math.max(1, num(f.every.value) || 7)), last: today() }); },
+      spend(f) { const amt = num(f.amt.value); if (!(amt > 0)) return; S.money.tx.push({ id: uid(), date: today(), amt, note: f.note.value.trim() }); toast(money(amt) + ' logged'); },
+      bill(f) { const name = f.name.value.trim(); if (!name) return; S.money.bills.push({ id: uid(), name, amt: num(f.amt.value), day: Math.min(28, Math.max(1, num(f.day.value) || 1)), paid: '' }); }
+    };
+    document.addEventListener('submit', (e) => { const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault(); if (!S || !FORMS[f.dataset.form]) return; FORMS[f.dataset.form](f); save(); renderTab(); const first = document.querySelector('#tab-' + tab + ' form[data-form="' + f.dataset.form + '"] input'); if (first) first.focus(); });
+    document.addEventListener('change', (e) => { const el = e.target; if (!S || !el.dataset) return; if (el.dataset.set) { S.money[el.dataset.set] = Math.max(0, num(el.value)); save(); renderMoney(); updateNav(); } else if (el.dataset.prof) { const k = el.dataset.prof, v = el.type === 'text' ? el.value.trim() : (k === 'waterGoal' ? num(el.value) : el.value); S.profile[k] = v; if(k === 'theme') { document.body.className = 'theme-' + v; toast('Theme updated'); } else { toast('Saved locally'); } save(); } });
+
+    // ==========================================
+    // 10. WEATHER & AUTH
+    // ==========================================
+    let townResults = [], weatherSequence=0;
+    async function findTown(e){ e.preventDefault();const input=$('weather-town'),query=input.value.trim();if(query.length<2)return; const output=$('town-results');output.textContent='Searching…'; try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?'+new URLSearchParams({name:query,count:8,language:'en',format:'json'})); if(!r.ok)throw Error('Search failed');const j=await r.json();townResults=(j.results||[]).map(x=>({lat:x.latitude,lon:x.longitude,label:[x.name,x.admin1,x.country].filter(Boolean).join(', '),timezone:x.timezone||'auto'})); if(!output.isConnected)return; output.innerHTML=townResults.length?townResults.map((t,i)=>'<button type="button" class="btn" style="font-size:13px" onclick="chooseTown('+i+')">'+esc(t.label)+'</button>').join(''):'No matching towns.'; }catch(e){output.textContent='Search unavailable.'} }
+    function chooseTown(i){if(!S||!townResults[i])return;S.profile.weatherLocation={...townResults[i]};S.profile.location=townResults[i].label;weather=null;save();renderTab();loadWeather();toast('Weather town updated')}
+    async function loadWeather() { if(!S)return;const id=user.id,loc=S.profile.weatherLocation,seq=++weatherSequence; if(!loc){weather={err:true};if(tab==='today'||tab==='plan')renderTab();return;} const key='dailynest.weather.'+loc.lat+','+loc.lon; try{let cache=JSON.parse(localStorage.getItem(key)||'null');if(cache)weather=cache}catch(e){} const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),10000); try{ const q=new URLSearchParams({latitude:loc.lat,longitude:loc.lon,current:'temperature_2m,weather_code',daily:'temperature_2m_max,precipitation_probability_max,uv_index_max',timezone:'auto',forecast_days:1}); const r=await fetch('https://api.open-meteo.com/v1/forecast?'+q,{signal:ctl.signal});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json(); const result={temp:j.current.temperature_2m,code:j.current.weather_code,hi:j.daily.temperature_2m_max[0],rain:j.daily.precipitation_probability_max[0]??0,uv:j.daily.uv_index_max[0]??0,fetched:Date.now()}; if(seq!==weatherSequence||user?.id!==id)return;weather=result;try{localStorage.setItem(key,JSON.stringify(result))}catch(e){} }catch(e){if(seq!==weatherSequence||user?.id!==id)return;if(!weather||weather.err)weather={err:true};} finally{clearTimeout(timer)} if(S&&(tab==='today'||tab==='plan'))renderTab(); }
+
+    function updateUI(session) {
+      if(recoveryMode)return;
+      if(session&&session.user){
+        if(user&&user.id===session.user.id&&S)return;
+        if(enteringUser===session.user.id)return;
+        const epoch=++authEpoch;enteringUser=session.user.id;
+        $('dashboard-view').classList.add('hidden');$('bottom-nav').classList.add('hidden');
+        const md=session.user.user_metadata||{};
+        user={id:session.user.id,email:session.user.email||'',name:md.name||md.full_name||'',location:md.location||''};
+        S=loadState();if(!S.profile.name)S.profile.name=user.name;if(!S.profile.location)S.profile.location=user.location;
+        if(S.profile.theme) document.body.className = 'theme-' + S.profile.theme;
+        cloud={revision:null,dirty:false,ready:false,conflict:false,busy:false,generation:0,status:'Loading private cloud records…',lastSeen:null};
+        showMessage('Loading your private records…','success');
+        authReady=bootstrapCloud(epoch).then(()=>{ if(epoch!==authEpoch)return;enteringUser=null; $('auth-view').classList.add('hidden');$('dashboard-view').classList.remove('hidden');$('bottom-nav').classList.remove('hidden'); goTab(tab);setSyncStatus(cloud.status);weather=null;loadWeather(); if(cloud.ready&&!cloud.conflict)syncNow(); }).catch(e=>{enteringUser=null;syncFailure(e)});
+      }else{ ++authEpoch;clearTimeout(syncTimer);enteringUser=null;user=null;S=null;weather=null;focus={end:0,total:0,timer:null}; $('auth-view').classList.remove('hidden');$('dashboard-view').classList.add('hidden');$('bottom-nav').classList.add('hidden'); setSyncStatus('Signed out.'); }
+    }
+    async function cancelRecovery(){if(sb)await sb.auth.signOut({scope:'local'});recoveryMode=false;history.replaceState(null,'',location.pathname);updateUI(null);switchAuthView('signin');}
+    function showRecovery(){ recoveryMode=true;clearTimeout(syncTimer);++authEpoch;user=null;S=null; $('auth-view').classList.remove('hidden');$('dashboard-view').classList.add('hidden');$('bottom-nav').classList.add('hidden'); $('signin-view').classList.add('hidden');$('signup-view').classList.add('hidden');$('recovery-view').classList.remove('hidden');clearMessage(); }
+    function watchAuth(client) { if(authWatched)return;authWatched=true; client.auth.onAuthStateChange((event,session)=>{ if(event==='PASSWORD_RECOVERY'){history.replaceState(null,'',location.pathname+'?recovery=1');showRecovery();return;} setTimeout(()=>updateUI(session),0); }); }
+    async function startAuth() { const client = await ensureClient(); if (!client) { showMessage(OFFLINE_MSG, 'error'); return; } watchAuth(client); try { const { data, error } = await withTimeout(client.auth.getSession(), 10000); if(error)throw error; if(!recoveryMode)updateUI(data.session); } catch (err) { console.error(err); updateUI(null); } }
+
+    $('signin-form').addEventListener('submit', async (e) => { e.preventDefault(); const btn = $('signin-btn'); btn.disabled = true; btn.textContent = 'Signing in...'; clearMessage(); try { const client = await ensureClient(); if (!client) { showMessage(OFFLINE_MSG, 'error'); return; } watchAuth(client); const email = $('signin-email').value.trim(), password = $('signin-password').value; const { data, error } = await withTimeout(client.auth.signInWithPassword({ email, password })); if (error) showMessage(friendlyError(error), 'error'); else { showMessage('Welcome back!', 'success'); $('signin-password').value = ''; if (data && data.session) updateUI(data.session); } } catch (err) { console.error(err); showMessage(friendlyError(err), 'error'); } finally { btn.disabled = false; btn.textContent = 'Sign in →'; } });
+    $('signup-form').addEventListener('submit', async (e) => { e.preventDefault(); const btn = $('signup-btn'); btn.disabled = true; btn.textContent = 'Creating account...'; clearMessage(); try { const client = await ensureClient(); if (!client) { showMessage(OFFLINE_MSG, 'error'); return; } watchAuth(client); const name = $('signup-name').value.trim(), location = $('signup-location').value.trim(); const email = $('signup-email').value.trim(), password = $('signup-password').value; const { data, error } = await withTimeout(client.auth.signUp({ email, password, options: { data: { name, full_name: name, location }, emailRedirectTo: redirectUrl() } })); if (error) showMessage(friendlyError(error), 'error'); else if (data && data.session) updateUI(data.session); else if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) showMessage('That email already has an account.', 'error'); else showMessage('Account created. Check your email to confirm.', 'success'); } catch (err) { console.error(err); showMessage(friendlyError(err), 'error'); } finally { btn.disabled = false; btn.textContent = 'Create account →'; } });
+    async function handleForgotPassword() { const email = $('signin-email').value.trim(); if (!email) { showMessage('Please enter your email first.', 'error'); return; } try { const client = await ensureClient(); if (!client) { showMessage(OFFLINE_MSG, 'error'); return; } const { error } = await withTimeout(client.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() + '?recovery=1' })); if (error) showMessage(friendlyError(error), 'error'); else showMessage('If eligible, a reset email will arrive. Check spam.', 'success'); } catch (err) { console.error(err); showMessage(friendlyError(err), 'error'); } }
+    async function handleLogout() { if(cloud.dirty&&!confirm('Unsaved changes will remain cached. Sign out anyway?'))return; try{if(sb){const {error}=await withTimeout(sb.auth.signOut({scope:'local'}),10000);if(error)throw error;}tab='today';recoveryMode=false;updateUI(null);switchAuthView('signin');} catch(e){toast('Could not sign out: '+friendlyError(e))} }
+    $('recovery-form').addEventListener('submit',async e=>{ e.preventDefault();const password=$('new-password').value; if(password!==$('repeat-password').value){showMessage('Passwords do not match.','error');return;} const btn=$('recovery-btn');btn.disabled=true; try{const client=await ensureClient();if(!client)throw Error(OFFLINE_MSG); const {error}=await withTimeout(client.auth.updateUser({password}));if(error)throw error; $('new-password').value='';$('repeat-password').value=''; const {error:signoutError}=await client.auth.signOut({scope:'local'});if(signoutError)throw signoutError; recoveryMode=false;history.replaceState(null,'',location.pathname);updateUI(null);switchAuthView('signin');showMessage('Password updated. Sign in.','success'); }catch(e){showMessage(friendlyError(e),'error')}finally{btn.disabled=false} });
+    async function restoreBackup(file){ if(!file||!S)return;const id=user.id; try{if(file.size>5000000)throw Error('Backup too large.');const raw=JSON.parse(await file.text()); if(!raw||!raw.profile||!raw.money||!['tasks','stock','shop','routines'].every(k=>Array.isArray(raw[k])))throw Error('Not a compatible backup.'); if(user?.id!==id)return;if(!confirm('Replace records with backup?'))return; backupSnapshot(S,'before-restore');S=normalize(raw);save();renderTab();loadWeather();toast('Backup restored.'); }catch(e){toast('Restore failed: '+e.message)} }
+    let deferredInstall=null,installStatus='On Android Chrome, open menu and choose Install app.';
+    window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;installStatus='Installation available.'});
+    window.addEventListener('appinstalled',()=>{deferredInstall=null;installStatus='DailyNest installed.'});
+    async function installApp(){if(deferredInstall){await deferredInstall.prompt();deferredInstall=null;}else toast(installStatus)}
+    if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(e=>console.error('Offline setup failed',e));
+    if(new URLSearchParams(location.search).get('recovery')==='1'||location.hash.includes('type=recovery'))showRecovery();
+    const recoveryError=new URLSearchParams(location.hash.replace(/^#/, '')).get('error_description')||new URLSearchParams(location.search).get('error_description');
+    if(recoveryError)showMessage('Link could not be used: '+recoveryError+'.','error');
+    startAuth();
+  </script>
+</body>
 </html>
